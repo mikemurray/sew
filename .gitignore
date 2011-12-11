@@ -1,1 +1,32 @@
-node_modules/
+# Node
+b-cov
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+*.swp
+
+pids
+logs
+results
+
+node_modules
+npm-debug.log
+
+# Vim
+.*.sw[a-z]
+*.un~
+Session.vim
+
+# OSX
+.DS_Store
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes

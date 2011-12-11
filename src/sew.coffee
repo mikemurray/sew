@@ -14,9 +14,9 @@ class Worker
   options:
     public: './public'
     jsPath: './app'
-    cssPath: './styles/style.less'
+    cssPath: './app/css/style.less'
     outputJs: './public/js/scripts.js'
-    outputCss: '.public/css/styles.css'
+    outputCss: './public/css/styles.css'
 
   constructor: ->
     @readConfig()
@@ -42,7 +42,7 @@ class Worker
 
   watch: ->
     @compile()
-    @walk @options.publicDir, (file) =>
+    @walk @options.jsPath, (file) =>
       fs.watchFile file, (curr, prev) =>
         if curr and (curr.nlink is 0 or +curr.mtime isnt +prev.mtime)
           switch fpath.extname file
@@ -52,7 +52,7 @@ class Worker
   serve: ->
     @watch()
     @app.use strata.commonLogger
-    @app.use strata.static, @options.publicDir, ['index.html', 'index.htm']
+    @app.use strata.static, @options.public, ['index.html', 'index.htm']
     strata.run(@app)
   
   # Compilers
