@@ -12,11 +12,11 @@ class Worker
   
   configFile: './config.json'
   options:
-    publicDir: './testfiles'
-    jsPath: './js/mylibs'
-    cssPath: './css/style.less'
-    outputJs: './js/script.js'
-    outputCss: './css/style.css'
+    public: './public'
+    jsPath: './app'
+    cssPath: './styles/style.less'
+    outputJs: './public/js/scripts.js'
+    outputCss: '.public/css/styles.css'
 
   constructor: ->
     @readConfig()
@@ -30,7 +30,7 @@ class Worker
 
   # Actions
   new: ->
-    console.log (!fpath.existsSync @configFile), argv.force
+    if true and (!fpath.existsSync(@configFile) or argv.force)
       util.log 'Creating config file'
       fs.writeFileSync @configFile, JSON.stringify(@options, null, 2)
     else
