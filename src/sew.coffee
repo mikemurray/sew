@@ -6,7 +6,16 @@ cs = require 'coffee-script'
 less = require 'less'
 stitch = require 'stitch'
 strata = require 'strata'
-argv = require("optimist").argv
+opti = require "optimist"
+  
+argv = opti.usage('''
+  Example: sew build
+  Commands:
+    new     Create new config file, if you want to change the defaults
+    build   Build your project
+    watch   Wacth and rebuild your project
+    serve   Start a simple HTTP server, watch and build your project
+    ''').argv
 
 class Worker
   
@@ -27,6 +36,8 @@ class Worker
       when 'build' then @compile()
       when 'watch' then @watch()
       when 'serve' then @serve()
+      when 'help' then opti.showHelp()
+      else opti.showHelp()
 
   # Actions
   new: ->
@@ -51,9 +62,10 @@ class Worker
 
   serve: ->
     @watch()
-    @app.use strata.commonLogger
-    @app.use strata.static, @options.public, ['index.html', 'index.htm']
-    strata.run(@app)
+    app = new strata.Builder
+    app.use strata.commonLogger
+    app.use strata.static, @options.public, ['index.html', 'index.htm']
+    strata.run(app)
   
   # Compilers
   compileScriptsAndTemplates: ->
@@ -75,7 +87,6 @@ class Worker
       config = fs.readFileSync @configFile
       config = JSON.parse config
       @options[key] = value for key, value of config
-      @app = new strata.Builder
 
   walk: (path, callback) ->
     for f in fs.readdirSync(path)
