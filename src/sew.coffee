@@ -9,13 +9,18 @@ strata = require 'strata'
 opti = require "optimist"
   
 argv = opti.usage('''
-  Example: sew build
+  Exampleis: 
+    sew build
+    sew serve -p 8080
+  
   Commands:
-    new     Create new config file, if you want to change the defaults
+    new     Create new config file, this is required
     build   Build your project
     watch   Wacth and rebuild your project
-    serve   Start a simple HTTP server, watch and build your project
-    ''').argv
+    serve   Start a simple HTTP server on port 3000, watch and build your project
+    ''')
+.default({p: 3000})
+.argv
 
 class Worker
   
@@ -28,7 +33,10 @@ class Worker
     outputCss: './public/css/styles.css'
 
   constructor: ->
-    @readConfig()
+    if not @readConfig() 
+      opti.showHelp() 
+      return 0
+
     @package = stitch.createPackage { paths: [@options.jsPath] }
 
     switch argv._[0]
@@ -65,7 +73,7 @@ class Worker
     app = new strata.Builder
     app.use strata.commonLogger
     app.use strata.static, @options.public, ['index.html', 'index.htm']
-    strata.run(app)
+    strata.run app, { port: argv.p }
   
   # Compilers
   compileScriptsAndTemplates: ->
@@ -87,6 +95,8 @@ class Worker
       config = fs.readFileSync @configFile
       config = JSON.parse config
       @options[key] = value for key, value of config
+      return true
+    false
 
   walk: (path, callback) ->
     for f in fs.readdirSync(path)
