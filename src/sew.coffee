@@ -9,7 +9,7 @@ strata = require 'strata'
 opti = require "optimist"
   
 argv = opti.usage('''
-  Exampleis: 
+  Examples: 
     sew build
     sew serve -p 8080
   
