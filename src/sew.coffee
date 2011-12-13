@@ -10,6 +10,7 @@ opti = require "optimist"
   
 argv = opti.usage('''
   Examples: 
+    sew new
     sew build
     sew serve -p 8080
   
@@ -33,7 +34,7 @@ class Worker
     outputCss: './public/css/styles.css'
 
   constructor: ->
-    if not @readConfig() 
+    if not @readConfig() and argv._[0] isnt 'new' 
       opti.showHelp() 
       return 0
 
