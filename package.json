@@ -1,6 +1,6 @@
 {
   "name": "sew",
-  "description": "Test, abd build for your CoffeeScript, LESS, Eco projects.",
+  "description": "Test, and build your CoffeeScript, LESS, Eco projects.",
   "author": "Mike Murray",
   "version": "0.1.1",
   "licenses": [
