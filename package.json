@@ -13,13 +13,13 @@
   "main": "./lib/sew.js",
   "bin": {
     "sew": "./bin/sew"
-  }
+  },
   "repository": {
     "type": "git",
     "url": "http://github.com/mikemurray/sew.git"
   },
   "dependencies" : {
-    "optimist": ">= 0.3.0"
+    "optimist": ">= 0.3.0",
     "coffee-script" : ">= 1.1.3",
     "less": ">= 1.1.5",
     "stitch": ">= 0.3.2",
