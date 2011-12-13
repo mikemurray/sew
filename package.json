@@ -6,7 +6,7 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/mikemurray/stitch/raw/master/LICENSE"
+      "url": "https://raw.github.com/mikemurray/sew/master/LICENSE"
     }
   ],
   "engine": [ "node >= 0.6.5" ],
