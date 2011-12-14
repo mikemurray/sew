@@ -25,80 +25,77 @@ argv = opti.usage('''
 
 class Worker
   
-  configFile: './config.json'
-  options:
-    public: './public'
-    jsPath: './app'
-    cssPath: './app/css/style.less'
-    outputJs: './public/js/scripts.js'
-    outputCss: './public/css/styles.css'
+  configFile: 'config.json'
+  defaults:
+    public: 'public'
+    scripts: 'app'
+    scriptsOutput: 'public/js/app.js'
+    styles: 'css/style.less'
+    stylesOutput: 'public/css/app.css'
 
   constructor: ->
-    if not @readConfig() and argv._[0] isnt 'new' 
-      opti.showHelp() 
-      return 0
-
-    @package = stitch.createPackage { paths: [@options.jsPath] }
-
-    switch argv._[0]
-      when 'new' then @new()
-      when 'build' then @compile()
-      when 'watch' then @watch()
-      when 'serve' then @serve()
-      when 'help' then opti.showHelp()
-      else opti.showHelp()
+    action = @['_' + argv._[0]]
+    if action then action.call(@) else @_help()
 
   # Actions
-  new: ->
+  _new: ->
     if true and (!fpath.existsSync(@configFile) or argv.force)
       util.log 'Creating config file'
-      fs.writeFileSync @configFile, JSON.stringify(@options, null, 2)
+      fs.writeFileSync @configFile, JSON.stringify(@defaults, null, 2)
     else
       util.log 'Config file already exists use --force to override'
 
-  compile: ->
-    @compileScriptsAndTemplates()
+  _build: ->
+    @readConfig()
+    @compileScripts()
     @compileStyles()
 
-  watch: ->
-    @compile()
+  _watch: ->
+    @_build()
     @walk './', (file) =>
       fs.watchFile file, (curr, prev) =>
         if curr and (curr.nlink is 0 or +curr.mtime isnt +prev.mtime)
           switch fpath.extname file
-            when '.coffee', '.eco' then @compileScriptsAndTemplates()
+            when '.coffee', '.eco' then @compileScripts()
             when '.less' then @compileStyles()
 
-  serve: ->
-    @watch()
+  _serve: ->
+    @_watch()
     app = new strata.Builder
     app.use strata.commonLogger
     app.use strata.static, @options.public, ['index.html', 'index.htm']
     strata.run app, { port: argv.p }
-  
+
+  _help: ->
+    opti.showHelp()
+
   # Compilers
-  compileScriptsAndTemplates: ->
+  compileScripts: ->
     util.log 'Building scripts...'
+    @package = stitch.createPackage { paths: [@options.scripts] } if not @package
     @package.compile (err, source) =>
-      fs.writeFile @options.outputJs, source, (err) ->
+      fs.writeFile @options.scriptsOutput, source, (err) ->
         util.log err.message if err
   
   compileStyles: ->
     util.log 'Building styles...'
-    if fpath.existsSync @options.cssPath
-      less.render fs.readFileSync(@options.cssPath, 'utf8'), (e, css) =>
+    if fpath.existsSync @options.styles
+      less.render fs.readFileSync(@options.styles, 'utf8'), (e, css) =>
         util.log "LESS - #{e.name} | #{e.message} | #{e.extract}" if e
-        fs.writeFile @options.outputCss, css, (err) ->
+        fs.writeFile @options.stylesOutput, css, (err) ->
           util.log err.message if err
   
   # Utiliity
   readConfig: ->
+    return if @options
     if fpath.existsSync @configFile
       config = fs.readFileSync @configFile
       config = JSON.parse config
+      @options = {}
+      @options[key] = value for key, value of @defaults
       @options[key] = value for key, value of config
       return true
-    false
+    process.exit(1)
 
   walk: (path, callback) ->
     for f in fs.readdirSync(path)
