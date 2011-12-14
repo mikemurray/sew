@@ -95,6 +95,8 @@ class Worker
       @options[key] = value for key, value of @defaults
       @options[key] = value for key, value of config
       return true
+
+    opti.showHelp()
     process.exit(1)
 
   walk: (path, callback) ->
