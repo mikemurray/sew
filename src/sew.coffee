@@ -62,11 +62,11 @@ class Worker
 
   watch: ->
     @compile()
-    @walk @options.jsPath, (file) =>
+    @walk './', (file) =>
       fs.watchFile file, (curr, prev) =>
         if curr and (curr.nlink is 0 or +curr.mtime isnt +prev.mtime)
           switch fpath.extname file
-            when '.coffee' then @compileScriptsAndTemplates()
+            when '.coffee', '.eco' then @compileScriptsAndTemplates()
             when '.less' then @compileStyles()
 
   serve: ->
@@ -85,10 +85,11 @@ class Worker
   
   compileStyles: ->
     util.log 'Building styles...'
-    less.render fs.readFileSync(@options.cssPath, 'utf8'), (e, css) =>
-      util.log "LESS - #{e.name} | #{e.message} | #{e.extract}" if e
-      fs.writeFile @options.outputCss, css, (err) ->
-        util.log err.message if err
+    if fpath.existsSync @options.cssPath
+      less.render fs.readFileSync(@options.cssPath, 'utf8'), (e, css) =>
+        util.log "LESS - #{e.name} | #{e.message} | #{e.extract}" if e
+        fs.writeFile @options.outputCss, css, (err) ->
+          util.log err.message if err
   
   # Utiliity
   readConfig: ->
