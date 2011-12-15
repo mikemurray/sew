@@ -27,10 +27,11 @@ class Worker
   
   configFile: 'config.json'
   defaults:
-    public: 'public'
-    scripts: 'app'
+    public: 'public' # Static Files
+    libs: [] # JS to concat and append before app scripts
+    scripts: [ 'app' ]
     scriptsOutput: 'public/js/app.js'
-    styles: 'css/style.less'
+    styles: [ 'css/style.less' ]
     stylesOutput: 'public/css/app.css'
 
   constructor: ->
@@ -56,8 +57,8 @@ class Worker
       fs.watchFile file, (curr, prev) =>
         if curr and (curr.nlink is 0 or +curr.mtime isnt +prev.mtime)
           switch fpath.extname file
-            when '.coffee', '.eco' then @compileScripts()
-            when '.less' then @compileStyles()
+            when '.coffee', '.eco', 'js' then @compileScripts()
+            when '.less', '.css' then @compileStyles()
 
   _serve: ->
     @_watch()
@@ -72,15 +73,25 @@ class Worker
   # Compilers
   compileScripts: ->
     util.log 'Building scripts...'
-    @package = stitch.createPackage { paths: [@options.scripts] } if not @package
+    
+    libSources = []
+    for lib in @options.libs
+      libSources.push(fs.readFileSync lib) if fpath.existsSync lib
+    
+    @package = stitch.createPackage { paths: @options.scripts } if not @package
     @package.compile (err, source) =>
-      fs.writeFile @options.scriptsOutput, source, (err) ->
-        util.log err.message if err
-  
+      if not @options.compineScripts
+        source = libSources.join('\n') + source
+        fs.writeFile @options.scriptsOutput, source, (err) ->
+          util.log err.message if err
+ 
+
   compileStyles: ->
     util.log 'Building styles...'
-    if fpath.existsSync @options.styles
-      less.render fs.readFileSync(@options.styles, 'utf8'), (e, css) =>
+    styleSources = []
+    for style in @options.styles
+      styleSources.push(fs.readFileSync style) if fpath.existsSync style
+      less.render styleSources.join('\n'), (e, css) =>
         util.log "LESS - #{e.name} | #{e.message} | #{e.extract}" if e
         fs.writeFile @options.stylesOutput, css, (err) ->
           util.log err.message if err
@@ -88,14 +99,17 @@ class Worker
   # Utiliity
   readConfig: ->
     return if @options
-    if fpath.existsSync @configFile
-      config = fs.readFileSync @configFile
-      config = JSON.parse config
-      @options = {}
-      @options[key] = value for key, value of @defaults
-      @options[key] = value for key, value of config
-      return true
-
+    try 
+      if fpath.existsSync @configFile
+        config = fs.readFileSync @configFile
+        config = JSON.parse config
+        @options = {}
+        @options[key] = value for key, value of @defaults
+        @options[key] = value for key, value of config
+        return true
+    catch e
+      util.log 'Error reading config file, check syntax and try again'
+    
     opti.showHelp()
     process.exit(1)
 
@@ -110,7 +124,7 @@ class Worker
 
   isWatchable: (file) ->
     switch fpath.extname file 
-      when '.js', '.coffee', '.less', '.eco' then return true
+      when '.js', '.coffee', '.css', '.less', '.eco' then return true
     false
  
 new Worker()
