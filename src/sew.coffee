@@ -26,10 +26,11 @@ argv = opti.usage('''
 class Worker
   
   configFile: 'config.json'
+  watchedFiles: []
   defaults:
     public: 'public' # Static Files
     libs: [] # JS to concat and append before app scripts
-    scripts: [ 'app' ]
+    scripts: [ 'app' ] # Folders containing scripts and templates to stitch
     scriptsOutput: 'public/js/app.js'
     styles: [ 'css/style.less' ]
     stylesOutput: 'public/css/app.css'
@@ -53,12 +54,10 @@ class Worker
 
   _watch: ->
     @_build()
-    @walk './', (file) =>
-      fs.watchFile file, (curr, prev) =>
-        if curr and (curr.nlink is 0 or +curr.mtime isnt +prev.mtime)
-          switch fpath.extname file
-            when '.coffee', '.eco', 'js' then @compileScripts()
-            when '.less', '.css' then @compileStyles()
+    @walk lib, @watchFile for lib in @options.libs
+    @walk scripts, @watchFile for scripts in @options.scripts
+    @walk styles, @watchFile for styles in @options.styles
+
 
   _serve: ->
     @_watch()
@@ -114,17 +113,29 @@ class Worker
     process.exit(1)
 
   walk: (path, callback) ->
-    for f in fs.readdirSync(path)
-      f = fpath.join(path, f)
-      stats = fs.statSync(f)
-      if stats.isDirectory()
-        @walk f, callback
-      else
-        callback.call(@, f) if @isWatchable(f)
+    stats = fs.statSync path
+    console.log(path)
+    if stats.isFile()
+      callback.call(@, path) if @isWatchable(path)
+    else
+      for f in fs.readdirSync(path)
+        f = fpath.join(path, f)
+        stats = fs.statSync(f)
+        if stats.isDirectory()
+          @walk f, callback
+        else
+          callback.call(@, f) if @isWatchable(f)
 
   isWatchable: (file) ->
     switch fpath.extname file 
       when '.js', '.coffee', '.css', '.less', '.eco' then return true
     false
+
+  watchFile: (file) ->
+    fs.watchFile file, (curr, prev) =>
+      if curr and (curr.nlink is 0 or +curr.mtime isnt +prev.mtime)
+        switch fpath.extname file
+          when '.coffee', '.eco', '.js' then @compileScripts()
+          when '.less', '.css' then @compileStyles()
  
 new Worker()
