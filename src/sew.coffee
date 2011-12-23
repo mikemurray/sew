@@ -6,7 +6,8 @@ cs = require 'coffee-script'
 less = require 'less'
 stitch = require 'stitch'
 strata = require 'strata'
-opti = require "optimist"
+opti = require 'optimist'
+uglyjs = require 'uglify-js'
   
 argv = opti.usage('''
   Examples: 
@@ -20,7 +21,7 @@ argv = opti.usage('''
     watch   Wacth and rebuild your project
     serve   Start a simple HTTP server on port 3000, watch and build your project
     ''')
-.default({p: 3000})
+.default({p: 3000, c: false})
 .argv
 
 class Worker
@@ -34,6 +35,8 @@ class Worker
     scriptsOutput: 'public/js/app.js'
     styles: [ 'css/style.less' ]
     stylesOutput: 'public/css/app.css'
+    compressScripts: false
+    compressStyles: false
 
   constructor: ->
     action = @['_' + argv._[0]]
@@ -58,12 +61,11 @@ class Worker
     @walk scripts, @watchFile for scripts in @options.scripts
     @walk styles, @watchFile for styles in @options.styles
 
-
   _serve: ->
     @_watch()
     app = new strata.Builder
     app.use strata.commonLogger
-    app.use strata.static, @options.public, ['index.html', 'index.htm']
+    app.use strata.file, @options.public, ['index.html', 'index.htm']
     strata.run app, { port: argv.p }
 
   _help: ->
@@ -81,18 +83,26 @@ class Worker
     @package.compile (err, source) =>
       if not @options.compineScripts
         source = libSources.join('\n') + source
+        if @options.compressScripts
+          source = uglyjs.parser.parse source
+          source = uglyjs.uglify.ast_mangle source
+          source = uglyjs.uglify.ast_squeeze source
+          source = uglyjs.uglify.gen_code source
+
         fs.writeFile @options.scriptsOutput, source, (err) ->
           util.log err.message if err
  
 
   compileStyles: ->
     util.log 'Building styles...'
+
+    @cssParser = new(less.Parser) if not @cssParser
     styleSources = []
     for style in @options.styles
       styleSources.push(fs.readFileSync style) if fpath.existsSync style
-      less.render styleSources.join('\n'), (e, css) =>
+      @cssParser.parse styleSources.join('\n'), (e, tree) =>
         util.log "LESS - #{e.name} | #{e.message} | #{e.extract}" if e
-        fs.writeFile @options.stylesOutput, css, (err) ->
+        fs.writeFile @options.stylesOutput, tree.toCSS({ compress: @options.compressStyles }), (err) ->
           util.log err.message if err
   
   # Utiliity
@@ -105,6 +115,9 @@ class Worker
         @options = {}
         @options[key] = value for key, value of @defaults
         @options[key] = value for key, value of config
+        
+        @options.compressScripts = true if argv.c
+        @options.compressStyles = true if argv.c
         return true
     catch e
       util.log 'Error reading config file, check syntax and try again'
@@ -114,7 +127,6 @@ class Worker
 
   walk: (path, callback) ->
     stats = fs.statSync path
-    console.log(path)
     if stats.isFile()
       callback.call(@, path) if @isWatchable(path)
     else

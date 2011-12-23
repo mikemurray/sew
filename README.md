@@ -16,3 +16,4 @@ Sew is a simple build/dev tool for your web based projects using CoffeeScript, L
 
     Options:
       -p  [default: 3000]
+      --compress  Compress styles and scripts
