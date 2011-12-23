@@ -2,7 +2,7 @@
   "name": "sew",
   "description": "Test, and build your CoffeeScript, LESS, Eco projects.",
   "author": "Mike Murray",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "licenses": [
     {
       "type": "MIT",
@@ -27,6 +27,6 @@
     "stitch": "~0.3.2",
     "strata": "~0.9.1",
     "uglify-js": "~1.2.2",
-    "eco": "~1.1.0-rc-1"
+    "eco": "~1.1.0"
   }
 }
